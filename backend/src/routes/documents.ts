@@ -23,6 +23,7 @@ import {
 } from "../lib/documentVersions";
 import { ensureDocAccess } from "../lib/access";
 import { singleFileUpload } from "../lib/upload";
+import { extractVersionText, indexDocumentVersion } from "../lib/embeddings";
 
 export const documentsRouter = Router();
 const ALLOWED_TYPES = new Set(["pdf", "docx", "doc"]);
@@ -949,6 +950,19 @@ async function handleDocumentUpload(
         updated_at: new Date().toISOString(),
       })
       .eq("id", docId);
+
+    // Fire-and-forget: embed document chunks for semantic search.
+    if (process.env.VOYAGE_API_KEY) {
+      const versionId = versionRow.id as string;
+      extractVersionText(key, suffix)
+        .then((text) => {
+          if (!text) return;
+          return indexDocumentVersion({ documentId: docId, versionId, text, db });
+        })
+        .catch((err) => {
+          console.error(`[embeddings] indexing failed for ${filename}:`, err);
+        });
+    }
 
     const { data: updated } = await db
       .from("documents")

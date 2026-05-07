@@ -15,7 +15,7 @@ import { isModelAvailable } from "@/app/lib/modelAvailability";
 export interface ModelOption {
     id: string;
     label: string;
-    group: "Anthropic" | "Google";
+    group: "Anthropic" | "Google" | "OpenRouter";
 }
 
 export const MODELS: ModelOption[] = [
@@ -23,13 +23,18 @@ export const MODELS: ModelOption[] = [
     { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", group: "Anthropic" },
     { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro", group: "Google" },
     { id: "gemini-3-flash-preview", label: "Gemini 3 Flash", group: "Google" },
+    { id: "openai/gpt-4o", label: "GPT-4o", group: "OpenRouter" },
+    { id: "openai/gpt-4-turbo", label: "GPT-4 Turbo", group: "OpenRouter" },
+    { id: "mistralai/mistral-large", label: "Mistral Large", group: "OpenRouter" },
+    { id: "meta-llama/llama-3.3-70b-instruct", label: "Llama 3.3 70B", group: "OpenRouter" },
+    { id: "google/gemma-3-27b-it", label: "Gemma 3 27B", group: "OpenRouter" },
 ];
 
 export const DEFAULT_MODEL_ID = "gemini-3-flash-preview";
 
 export const ALLOWED_MODEL_IDS = new Set(MODELS.map((m) => m.id));
 
-const GROUP_ORDER: ModelOption["group"][] = ["Anthropic", "Google"];
+const GROUP_ORDER: ModelOption["group"][] = ["Anthropic", "Google", "OpenRouter"];
 
 interface Props {
     value: string;
@@ -37,6 +42,7 @@ interface Props {
     apiKeys?: {
         claudeApiKey: string | null;
         geminiApiKey: string | null;
+        openrouterApiKey: string | null;
     };
 }
 

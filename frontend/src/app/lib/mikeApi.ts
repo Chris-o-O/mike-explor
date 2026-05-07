@@ -815,3 +815,29 @@ export async function deleteWorkflowShare(
         method: "DELETE",
     });
 }
+
+// ---------------------------------------------------------------------------
+// Semantic search
+// ---------------------------------------------------------------------------
+
+export interface SemanticSearchResult {
+    document_id: string;
+    version_id: string;
+    chunk_index: number;
+    chunk_text: string;
+    page_number: number | null;
+    similarity: number;
+    filename: string;
+}
+
+export async function semanticSearch(params: {
+    query: string;
+    document_ids?: string[];
+    top_k?: number;
+}): Promise<{ results: SemanticSearchResult[] }> {
+    return apiRequest<{ results: SemanticSearchResult[] }>("/search/semantic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+    });
+}
