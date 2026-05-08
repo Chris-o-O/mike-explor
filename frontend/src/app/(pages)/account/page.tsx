@@ -4,15 +4,23 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { LogOut, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/contexts/UserProfileContext";
-import { deleteAccount } from "@/app/lib/mikeApi";
+import { deleteAccount, updateUserPersona } from "@/app/lib/mikeApi";
+
+const PRACTICE_AREAS = [
+    "Corporate / M&A", "Litigation", "Real Estate", "Employment",
+    "Intellectual Property", "Tax", "Banking & Finance", "Insolvency",
+    "Privacy / Data Protection", "Regulatory", "Family Law", "Criminal",
+    "Immigration", "Environmental",
+];
 
 export default function AccountPage() {
     const router = useRouter();
     const { user, signOut } = useAuth();
-    const { profile, updateDisplayName, updateOrganisation } = useUserProfile();
+    const { profile, updateDisplayName, updateOrganisation, reloadProfile } = useUserProfile();
     const [displayName, setDisplayName] = useState("");
     const [isSavingName, setIsSavingName] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -22,12 +30,26 @@ export default function AccountPage() {
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Persona fields
+    const [userRole, setUserRole] = useState("");
+    const [practiceAreas, setPracticeAreas] = useState<string[]>([]);
+    const [barNumber, setBarNumber] = useState("");
+    const [userInstructions, setUserInstructions] = useState("");
+    const [isSavingPersona, setIsSavingPersona] = useState(false);
+    const [personaSaved, setPersonaSaved] = useState(false);
+
     useEffect(() => {
         if (profile?.displayName) {
             setDisplayName(profile.displayName);
         }
         if (profile?.organisation) {
             setOrganisation(profile.organisation);
+        }
+        if (profile) {
+            setUserRole(profile.userRole ?? "");
+            setPracticeAreas(profile.practiceAreas ?? []);
+            setBarNumber(profile.barNumber ?? "");
+            setUserInstructions(profile.userCustomInstructions ?? "");
         }
     }, [profile]);
 
@@ -72,6 +94,25 @@ export default function AccountPage() {
             setTimeout(() => setOrgSaved(false), 2000);
         } else {
             alert("Failed to update organisation. Please try again.");
+        }
+    };
+
+    const handleSavePersona = async () => {
+        setIsSavingPersona(true);
+        try {
+            await updateUserPersona({
+                user_role: userRole.trim() || null,
+                practice_areas: practiceAreas,
+                bar_number: barNumber.trim() || null,
+                user_custom_instructions: userInstructions.trim() || null,
+            });
+            await reloadProfile();
+            setPersonaSaved(true);
+            setTimeout(() => setPersonaSaved(false), 2000);
+        } catch {
+            alert("Failed to save profile. Please try again.");
+        } finally {
+            setIsSavingPersona(false);
         }
     };
 
@@ -163,8 +204,88 @@ export default function AccountPage() {
                 </div>
             </div>
 
+            {/* Persona */}
+            <div className="py-6 border-t border-gray-100">
+                <div className="flex items-center gap-2 mb-4">
+                    <h2 className="text-2xl font-medium font-serif">My Profile</h2>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">
+                    This information helps Mike tailor its responses to your role and expertise.
+                </p>
+                <div className="space-y-4 max-w-xl">
+                    <div>
+                        <label className="text-sm text-gray-600 block mb-2">Role / Title</label>
+                        <Input
+                            value={userRole}
+                            onChange={(e) => setUserRole(e.target.value)}
+                            placeholder="e.g. Senior Associate, Partner, In-house Counsel"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-sm text-gray-600 block mb-2">Practice areas</label>
+                        <div className="flex flex-wrap gap-2">
+                            {PRACTICE_AREAS.map((tag) => {
+                                const active = practiceAreas.includes(tag);
+                                return (
+                                    <button
+                                        key={tag}
+                                        type="button"
+                                        onClick={() =>
+                                            setPracticeAreas(
+                                                active
+                                                    ? practiceAreas.filter((t) => t !== tag)
+                                                    : [...practiceAreas, tag],
+                                            )
+                                        }
+                                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                                            active
+                                                ? "border-gray-900 bg-gray-900 text-white"
+                                                : "border-gray-200 text-gray-600 hover:border-gray-400"
+                                        }`}
+                                    >
+                                        {tag}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-sm text-gray-600 block mb-2">Bar number</label>
+                        <Input
+                            value={barNumber}
+                            onChange={(e) => setBarNumber(e.target.value)}
+                            placeholder="e.g. 123456 (Barreau du Québec)"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-sm text-gray-600 block mb-2">
+                            Personal instructions for Mike
+                        </label>
+                        <Textarea
+                            value={userInstructions}
+                            onChange={(e) => setUserInstructions(e.target.value)}
+                            placeholder="e.g. Always respond in French. Prioritise Quebec civil law. Flag any constitutional issues."
+                            rows={4}
+                        />
+                    </div>
+                    <Button
+                        onClick={handleSavePersona}
+                        disabled={isSavingPersona || personaSaved}
+                        className="min-w-[80px] transition-all bg-black hover:bg-gray-900 text-white"
+                    >
+                        {isSavingPersona ? (
+                            "Saving..."
+                        ) : personaSaved ? (
+                            <><Check className="h-4 w-3 mr-1" />Saved</>
+                        ) : (
+                            "Save"
+                        )}
+                    </Button>
+                </div>
+            </div>
+
             {/* Plan */}
-            <div className="py-6">
+            <div className="py-6 border-t border-gray-100">
                 <div className="flex items-center gap-2 mb-4">
                     <h2 className="text-2xl font-medium font-serif">
                         Usage Plan

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
 import { createServerSupabase } from "../lib/supabase";
+import { fetchPersonaContext, buildPersonaBlock } from "../lib/persona";
 import {
     buildDocContext,
     buildMessages,
@@ -416,7 +417,9 @@ chatRouter.post("/", requireAuth, async (req, res) => {
         db,
         docIndex,
     );
-    const apiMessages = buildMessages(enrichedMessages, docAvailability);
+    const personaCtx = await fetchPersonaContext(userId, db);
+    const personaBlock = buildPersonaBlock(personaCtx);
+    const apiMessages = buildMessages(enrichedMessages, docAvailability, personaBlock ?? undefined);
 
     const workflowStore = await buildWorkflowStore(userId, userEmail, db);
 

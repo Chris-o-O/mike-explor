@@ -22,6 +22,12 @@ interface UserProfile {
     claudeApiKey: string | null;
     geminiApiKey: string | null;
     openrouterApiKey: string | null;
+    // Persona fields
+    userRole: string | null;
+    practiceAreas: string[];
+    userCustomInstructions: string | null;
+    barNumber: string | null;
+    orgId: string | null;
 }
 
 interface UserProfileContextType {
@@ -79,6 +85,11 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                     claudeApiKey: null,
                     geminiApiKey: null,
                     openrouterApiKey: null,
+                    userRole: null,
+                    practiceAreas: [],
+                    userCustomInstructions: null,
+                    barNumber: null,
+                    orgId: null,
                 });
                 return;
             }
@@ -114,6 +125,11 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                     claudeApiKey: data.claude_api_key ?? null,
                     geminiApiKey: data.gemini_api_key ?? null,
                     openrouterApiKey: data.openrouter_api_key ?? null,
+                    userRole: data.user_role ?? null,
+                    practiceAreas: (data.practice_areas as string[] | null) ?? [],
+                    userCustomInstructions: data.user_custom_instructions ?? null,
+                    barNumber: data.bar_number ?? null,
+                    orgId: data.org_id ?? null,
                 });
 
                 // 2. Update database in background if needed
@@ -152,6 +168,11 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                 claudeApiKey: null,
                 geminiApiKey: null,
                 openrouterApiKey: null,
+                userRole: null,
+                practiceAreas: [],
+                userCustomInstructions: null,
+                barNumber: null,
+                orgId: null,
             });
         } finally {
             setLoading(false);
