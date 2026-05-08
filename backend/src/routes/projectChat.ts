@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
 import { createServerSupabase } from "../lib/supabase";
+import { fetchPersonaContext, buildPersonaBlock } from "../lib/persona";
 import {
     buildProjectDocContext,
     buildMessages,
@@ -122,7 +123,10 @@ projectChatRouter.post("/", requireAuth, async (req, res) => {
     // the system prompt with the current-turn doc_id slugs so the model
     // knows which docs the user is highlighting *now*, distinct from
     // the broader project doc list.
+    const personaCtx = await fetchPersonaContext(userId, db);
+    const personaBlock = buildPersonaBlock(personaCtx);
     let systemPromptExtra = PROJECT_SYSTEM_PROMPT_EXTRA;
+    if (personaBlock) systemPromptExtra += `\n\n${personaBlock}`;
     if (attached_documents?.length) {
         const slugByDocumentId = new Map<string, string>();
         for (const [slug, info] of Object.entries(docIndex)) {

@@ -21,6 +21,13 @@ interface UserProfile {
     tabularModel: string;
     claudeApiKey: string | null;
     geminiApiKey: string | null;
+    openrouterApiKey: string | null;
+    // Persona fields
+    userRole: string | null;
+    practiceAreas: string[];
+    userCustomInstructions: string | null;
+    barNumber: string | null;
+    orgId: string | null;
 }
 
 interface UserProfileContextType {
@@ -33,7 +40,7 @@ interface UserProfileContextType {
         value: string,
     ) => Promise<boolean>;
     updateApiKey: (
-        provider: "claude" | "gemini",
+        provider: "claude" | "gemini" | "openrouter",
         value: string | null,
     ) => Promise<boolean>;
     reloadProfile: () => Promise<void>;
@@ -77,6 +84,12 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                     tabularModel: "gemini-3-flash-preview",
                     claudeApiKey: null,
                     geminiApiKey: null,
+                    openrouterApiKey: null,
+                    userRole: null,
+                    practiceAreas: [],
+                    userCustomInstructions: null,
+                    barNumber: null,
+                    orgId: null,
                 });
                 return;
             }
@@ -111,6 +124,12 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                         data.tabular_model || "gemini-3-flash-preview",
                     claudeApiKey: data.claude_api_key ?? null,
                     geminiApiKey: data.gemini_api_key ?? null,
+                    openrouterApiKey: data.openrouter_api_key ?? null,
+                    userRole: data.user_role ?? null,
+                    practiceAreas: (data.practice_areas as string[] | null) ?? [],
+                    userCustomInstructions: data.user_custom_instructions ?? null,
+                    barNumber: data.bar_number ?? null,
+                    orgId: data.org_id ?? null,
                 });
 
                 // 2. Update database in background if needed
@@ -148,6 +167,12 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                 tabularModel: "gemini-3-flash-preview",
                 claudeApiKey: null,
                 geminiApiKey: null,
+                openrouterApiKey: null,
+                userRole: null,
+                practiceAreas: [],
+                userCustomInstructions: null,
+                barNumber: null,
+                orgId: null,
             });
         } finally {
             setLoading(false);
@@ -245,14 +270,22 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
 
     const updateApiKey = useCallback(
         async (
-            provider: "claude" | "gemini",
+            provider: "claude" | "gemini" | "openrouter",
             value: string | null,
         ): Promise<boolean> => {
             if (!user) return false;
             const dbField =
-                provider === "claude" ? "claude_api_key" : "gemini_api_key";
+                provider === "claude"
+                    ? "claude_api_key"
+                    : provider === "gemini"
+                      ? "gemini_api_key"
+                      : "openrouter_api_key";
             const stateField =
-                provider === "claude" ? "claudeApiKey" : "geminiApiKey";
+                provider === "claude"
+                    ? "claudeApiKey"
+                    : provider === "gemini"
+                      ? "geminiApiKey"
+                      : "openrouterApiKey";
             const normalized = value?.trim() ? value.trim() : null;
             try {
                 const { error } = await supabase

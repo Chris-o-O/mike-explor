@@ -44,6 +44,7 @@ export default function ModelsAndApiKeysPage() {
                             apiKeys={{
                                 claudeApiKey: profile?.claudeApiKey ?? null,
                                 geminiApiKey: profile?.geminiApiKey ?? null,
+                                openrouterApiKey: profile?.openrouterApiKey ?? null,
                             }}
                             onChange={(id) =>
                                 updateModelPreference("tabularModel", id)
@@ -68,7 +69,8 @@ export default function ModelsAndApiKeysPage() {
                 <p className="text-xs text-gray-400 mb-4 max-w-xl">
                     Title generation automatically routes to the cheapest model
                     of whichever provider you&rsquo;ve configured (Gemini Flash
-                    Lite if a Gemini key is set, otherwise Claude Haiku).
+                    Lite if a Gemini key is set, otherwise Claude Haiku, then
+                    Llama 3.3 70B via OpenRouter).
                 </p>
                 <div className="space-y-4 max-w-xl">
                     <ApiKeyField
@@ -87,6 +89,14 @@ export default function ModelsAndApiKeysPage() {
                             updateApiKey("gemini", value.trim() || null)
                         }
                     />
+                    <ApiKeyField
+                        label="OpenRouter API Key"
+                        placeholder="sk-or-…"
+                        initialValue={profile?.openrouterApiKey ?? ""}
+                        onSave={(value) =>
+                            updateApiKey("openrouter", value.trim() || null)
+                        }
+                    />
                 </div>
             </div>
         </div>
@@ -100,12 +110,16 @@ function TabularModelDropdown({
 }: {
     value: string;
     onChange: (id: string) => void;
-    apiKeys: { claudeApiKey: string | null; geminiApiKey: string | null };
+    apiKeys: {
+        claudeApiKey: string | null;
+        geminiApiKey: string | null;
+        openrouterApiKey: string | null;
+    };
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const selected = MODELS.find((m) => m.id === value);
     const selectedAvailable = isModelAvailable(value, apiKeys);
-    const groups: ("Anthropic" | "Google")[] = ["Anthropic", "Google"];
+    const groups: ("Anthropic" | "Google" | "OpenRouter")[] = ["Anthropic", "Google", "OpenRouter"];
 
     return (
         <DropdownMenu onOpenChange={setIsOpen}>
@@ -154,7 +168,7 @@ function TabularModelDropdown({
                                         onSelect={() => onChange(m.id)}
                                         title={
                                             !available
-                                                ? `Add a ${provider === "claude" ? "Claude" : "Gemini"} API key to use this model`
+                                                ? `Add a ${provider === "claude" ? "Claude" : provider === "gemini" ? "Gemini" : "OpenRouter"} API key to use this model`
                                                 : undefined
                                         }
                                     >

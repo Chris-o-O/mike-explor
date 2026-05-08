@@ -413,6 +413,33 @@ export const TOOLS = [
             },
         },
     },
+    {
+        type: "function",
+        function: {
+            name: "semantic_search",
+            description:
+                "Search for passages in documents using semantic similarity. Use this when you need to find sections related to a concept, topic, or legal issue rather than an exact phrase. Returns the most relevant text chunks with their source document and page number.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: {
+                        type: "string",
+                        description: "The concept, topic, or legal issue to search for.",
+                    },
+                    doc_ids: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Optional: limit search to these document IDs (e.g. ['doc-0']). Omit to search all attached documents.",
+                    },
+                    top_k: {
+                        type: "integer",
+                        description: "Maximum number of results to return (default 5, max 20).",
+                    },
+                },
+                required: ["query"],
+            },
+        },
+    },
 ];
 
 type ParsedCitation = {
@@ -1569,6 +1596,46 @@ export async function runToolCalls(
                 });
             }
             toolResults.push({ role: "tool", tool_call_id: tc.id, content });
+
+        } else if (tc.function.name === "semantic_search") {
+            const query = (args.query as string) ?? "";
+            const rawDocIds = (args.doc_ids as string[] | undefined) ?? [];
+            const topK = Math.min(
+                20,
+                Math.max(1, typeof args.top_k === "number" ? args.top_k : 5),
+            );
+            const resolvedDocIds = rawDocIds.length > 0
+                ? rawDocIds
+                    .map((rawId) => {
+                        const label = resolveDocLabel(rawId, docStore, docIndex) ?? rawId;
+                        return docIndex?.[label]?.document_id;
+                    })
+                    .filter((id): id is string => typeof id === "string")
+                : undefined;
+
+            write(`data: ${JSON.stringify({ type: "semantic_search_start", query })}\n\n`);
+            try {
+                const { semanticSearch } = await import("./embeddings");
+                const results = await semanticSearch({
+                    query,
+                    userId,
+                    documentIds: resolvedDocIds,
+                    topK,
+                    db,
+                });
+                write(`data: ${JSON.stringify({ type: "semantic_search", query, result_count: results.length })}\n\n`);
+                toolResults.push({
+                    role: "tool",
+                    tool_call_id: tc.id,
+                    content: JSON.stringify({ ok: true, query, results }),
+                });
+            } catch (err) {
+                toolResults.push({
+                    role: "tool",
+                    tool_call_id: tc.id,
+                    content: JSON.stringify({ ok: false, error: String(err) }),
+                });
+            }
 
         } else if (tc.function.name === "list_documents") {
             const list = Array.from(docStore.entries()).map(

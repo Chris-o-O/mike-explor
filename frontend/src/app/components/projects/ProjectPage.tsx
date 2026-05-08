@@ -21,6 +21,8 @@ import {
     Users,
 } from "lucide-react";
 import { HeaderSearchBtn } from "@/app/components/shared/HeaderSearchBtn";
+import { SemanticSearchWidget } from "@/app/components/shared/SemanticSearchWidget";
+import type { SemanticSearchResult } from "@/app/lib/mikeApi";
 import {
     getProject,
     deleteDocument,
@@ -1276,6 +1278,18 @@ export function ProjectPage({ projectId }: Props) {
                 </div>
                 <div className="flex items-center gap-2">
                     <HeaderSearchBtn value={search} onChange={setSearch} placeholder="Search…" />
+                    <SemanticSearchWidget
+                        documentIds={project?.documents?.map((d) => d.id)}
+                        onResultClick={(result: SemanticSearchResult) => {
+                            const doc = project?.documents?.find(
+                                (d) => d.id === result.document_id,
+                            );
+                            if (doc) {
+                                setViewingDocVersion(null);
+                                setViewingDoc(doc);
+                            }
+                        }}
+                    />
                     <button
                         onClick={() => setPeopleModalOpen(true)}
                         className="flex h-8 w-8 items-center justify-center text-sm text-gray-500 transition-colors hover:text-gray-900 cursor-pointer"

@@ -815,3 +815,154 @@ export async function deleteWorkflowShare(
         method: "DELETE",
     });
 }
+
+// ---------------------------------------------------------------------------
+// Semantic search
+// ---------------------------------------------------------------------------
+
+export interface SemanticSearchResult {
+    document_id: string;
+    version_id: string;
+    chunk_index: number;
+    chunk_text: string;
+    page_number: number | null;
+    similarity: number;
+    filename: string;
+}
+
+export async function semanticSearch(params: {
+    query: string;
+    document_ids?: string[];
+    top_k?: number;
+}): Promise<{ results: SemanticSearchResult[] }> {
+    return apiRequest<{ results: SemanticSearchResult[] }>("/search/semantic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+    });
+}
+
+// ---------------------------------------------------------------------------
+// User persona
+// ---------------------------------------------------------------------------
+
+export interface UserPersona {
+    user_role: string | null;
+    practice_areas: string[];
+    user_custom_instructions: string | null;
+    bar_number: string | null;
+    org_id: string | null;
+}
+
+export async function getUserPersona(): Promise<UserPersona> {
+    return apiRequest<UserPersona>("/user/persona");
+}
+
+export async function updateUserPersona(
+    updates: Partial<Omit<UserPersona, "org_id">>,
+): Promise<void> {
+    await apiRequest("/user/persona", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Organizations
+// ---------------------------------------------------------------------------
+
+export interface Organization {
+    id: string;
+    name: string;
+    slug: string;
+    jurisdictions: string[];
+    practice_areas: string[];
+    custom_instructions: string | null;
+    language: string;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface OrgMember {
+    id: string;
+    user_id: string;
+    role: "admin" | "member";
+    joined_at: string;
+    display_name: string | null;
+    user_role: string | null;
+}
+
+export interface OrgInvite {
+    id: string;
+    org_id: string;
+    invited_email: string;
+    invited_by: string | null;
+    created_at: string;
+    expires_at: string;
+}
+
+export async function getMyOrg(): Promise<{
+    org: Organization | null;
+    membership: { role: "admin" | "member"; joined_at: string } | null;
+}> {
+    return apiRequest("/organizations/mine");
+}
+
+export async function createOrg(params: {
+    name: string;
+    jurisdictions?: string[];
+    practice_areas?: string[];
+    custom_instructions?: string;
+    language?: string;
+}): Promise<{ org: Organization }> {
+    return apiRequest("/organizations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+    });
+}
+
+export async function updateOrg(
+    id: string,
+    updates: Partial<Pick<Organization, "name" | "jurisdictions" | "practice_areas" | "custom_instructions" | "language">>,
+): Promise<{ org: Organization }> {
+    return apiRequest(`/organizations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+    });
+}
+
+export async function getOrgMembers(id: string): Promise<{ members: OrgMember[] }> {
+    return apiRequest(`/organizations/${id}/members`);
+}
+
+export async function inviteOrgMember(id: string, email: string): Promise<void> {
+    await apiRequest(`/organizations/${id}/invites`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+    });
+}
+
+export async function getOrgInvites(id: string): Promise<{ invites: OrgInvite[] }> {
+    return apiRequest(`/organizations/${id}/invites`);
+}
+
+export async function deleteOrgInvite(orgId: string, inviteId: string): Promise<void> {
+    await apiRequest(`/organizations/${orgId}/invites/${inviteId}`, { method: "DELETE" });
+}
+
+export async function removeOrgMember(orgId: string, memberId: string): Promise<void> {
+    await apiRequest(`/organizations/${orgId}/members/${memberId}`, { method: "DELETE" });
+}
+
+export async function leaveOrg(id: string): Promise<void> {
+    await apiRequest(`/organizations/${id}/leave`, { method: "DELETE" });
+}
+
+export async function acceptOrgInvite(): Promise<{ org: Organization }> {
+    return apiRequest("/organizations/accept-invite", { method: "POST" });
+}
